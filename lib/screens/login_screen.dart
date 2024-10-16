@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 
 class LoginScreen extends StatelessWidget {
@@ -21,51 +22,86 @@ class LoginScreen extends StatelessWidget {
 
 
   Future<void> _signInWithGoogle(BuildContext context) async {
-  try {
-    print("Google prijava započela...");
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    print("Google korisnik: $googleUser");
+    try {
+      print("Google prijava započela...");
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      print("Google korisnik: $googleUser");
 
-    final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
-    print("Google autentikacija: $googleAuth");
+      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+      print("Google autentikacija: $googleAuth");
 
-    if (googleAuth != null) {
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      print("Firebase kredencijali kreirani, prijavljujem korisnika...");
+      if (googleAuth != null) {
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        print("Firebase kredencijali kreirani, prijavljujem korisnika...");
 
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
-      print("Prijava na Firebase uspješna!");
+        UserCredential userCredential = await _auth.signInWithCredential(credential);
+        print("Prijava na Firebase uspješna!");
 
-      // Dobivanje korisničkih podataka
-      User? user = userCredential.user;
-      AdditionalUserInfo? additionalInfo = userCredential.additionalUserInfo;
+        // Dobivanje korisničkih podataka
+        User? user = userCredential.user;
+        AdditionalUserInfo? additionalInfo = userCredential.additionalUserInfo;
 
-      print("Korisnički podaci: ${user?.email}, ${user?.displayName}, ${user?.photoURL}");
-      print("Dodatne informacije: ${additionalInfo?.isNewUser}");
+        print("Korisnički podaci: ${user?.email}, ${user?.displayName}, ${user?.photoURL}");
+        print("Dodatne informacije: ${additionalInfo?.isNewUser}");
 
-      // Slanje podataka na API nakon uspješne prijave
-      if (googleUser != null) {
-        await sendUserDataToApi(googleUser);
-        await saveUserInfo(googleUser.email, googleUser.displayName!, googleUser.photoUrl!);
+        // Slanje podataka na API nakon uspješne prijave
+        if (googleUser != null) {
+          await sendUserDataToApi(googleUser);
+          await saveUserInfo(googleUser.email, googleUser.displayName!, googleUser.photoUrl!);
+        }
+
+        // Prijava uspješna, navigirajte na MapScreen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => MapScreen()),
+        );
+      } else {
+        print("Google autentikacija je null");
       }
-
-      // Prijava uspješna, navigirajte na MapScreen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MapScreen()),
-      );
-    } else {
-      print("Google autentikacija je null");
+    } catch (error) {
+      print("Greška prilikom prijave: $error");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Greška prilikom prijave. Pokušajte ponovo.'),
+      ));
     }
-  } catch (error) {
-    print("Greška prilikom prijave: $error");
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Greška prilikom prijave. Pokušajte ponovo.'),
-    ));
   }
-}
+
+  Future<void> _signInWithApple(BuildContext context) async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Spremi korisničke podatke
+        await saveUserInfo(user.email!, user.displayName ?? 'Anonymous', user.photoURL ?? '');
+        await sendAppleUserDataToApi(user.email!, user.displayName ?? 'Anonymous', user.photoURL ?? '');
+        
+        // Prijava uspješna, navigirajte na MapScreen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => MapScreen()),
+        );
+      }
+    } catch (error) {
+      print("Greška prilikom prijave s Apple: $error");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Greška prilikom prijave s Apple. Pokušajte ponovo.'),
+      ));
+    }
+  }
 
 
   @override
@@ -87,6 +123,14 @@ class LoginScreen extends StatelessWidget {
               Buttons.google,
               text: "Google prijava",
               onPressed: () => _signInWithGoogle(context),
+            ),
+            SizedBox(height: 10), // Razmak između gumba
+
+            // Gumb za prijavu s Apple računom
+            SignInButton(
+              Buttons.apple,
+              text: "Apple prijava",
+              onPressed: () => _signInWithApple(context),
             ),
             SizedBox(height: 10), // Razmak između gumba
 
@@ -138,6 +182,28 @@ class LoginScreen extends StatelessWidget {
           'email': account.email,
           'displayName': account.displayName ?? 'Anonymous',
           'imageurl': account.photoUrl ?? '', // Postavljamo link slike, ako postoji
+          'device': 'iphone',
+        },
+      );
+
+      print("Podaci uspješno poslani na API");
+    } catch (error) {
+      print("Greška prilikom slanja podataka na API: $error");
+    }
+  }
+
+  Future<void> sendAppleUserDataToApi(String email, String displayName, String photoUrl) async {
+    final url = Uri.parse('https://blaslov.smart-solutions.hr/api/login_user.php');
+    
+    try {
+      print("Šaljem podatke na API: ${email}, ${displayName}, ${photoUrl}");
+      
+      await http.post(
+        url,
+        body: {
+          'email': email,
+          'displayName': displayName ?? 'Anonymous',
+          'imageurl': photoUrl ?? '', // Postavljamo link slike, ako postoji
           'device': 'iphone',
         },
       );

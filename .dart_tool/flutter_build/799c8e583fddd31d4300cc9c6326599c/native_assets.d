@@ -1,0 +1,1 @@
+ /Users/stipestaglicic/Desktop/projects/provir_new/.dart_tool/flutter_build/799c8e583fddd31d4300cc9c6326599c/native_assets.yaml: 

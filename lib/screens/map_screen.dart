@@ -14,6 +14,16 @@ GoogleSignIn _googleSignIn = GoogleSignIn();
 
 void signOut(BuildContext context) async {
   await _googleSignIn.signOut();
+  // Očisti spremljene podatke
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => LoginScreen()),
+  );
+}
+
+void signIn(BuildContext context) async {
   Navigator.pushReplacement(
     context,
     MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -51,9 +61,9 @@ class _MapScreenState extends State<MapScreen> {
 
   List<Widget> _screens = [
     MapScreenContent(), // Your map content here
-    ProfileScreen(), // Show only if the user is logged in
     InfoScreen(),
     AboutUsScreen(),
+    ProfileScreen(), // Show only if the user is logged in
   ];
 
   List<BottomNavigationBarItem> _buildBottomNavigationItems() {
@@ -62,11 +72,6 @@ class _MapScreenState extends State<MapScreen> {
         icon: Icon(Icons.home),
         label: 'Karta',
       ),
-      if (_isUserLoggedIn)  // Prikazujemo "Profil" samo ako je korisnik prijavljen
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profil',
-        ),
       BottomNavigationBarItem(
         icon: Icon(Icons.info),
         label: 'Informacije',
@@ -75,6 +80,11 @@ class _MapScreenState extends State<MapScreen> {
         icon: Icon(Icons.more_vert),
         label: 'O nama',
       ),
+      if (_isUserLoggedIn)  // Prikazujemo "Profil" samo ako je korisnik prijavljen
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profil',
+        ),
     ];
     return items;
   }
@@ -90,11 +100,11 @@ class _MapScreenState extends State<MapScreen> {
       case 0:
         return 'Karta';
       case 1:
-        return 'Profil';
-      case 2:
         return 'Informacije';
-      case 3:
+      case 2:
         return 'O nama';
+      case 3:
+        return 'Profil';
       default:
         return '';
     }
@@ -107,10 +117,15 @@ class _MapScreenState extends State<MapScreen> {
         title: Text(_getTitleForIndex(_selectedIndex), style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF151E48),
         actions: [
-          if (_isUserLoggedIn && _selectedIndex == 1) // Prikazuj logout button samo na "Profil" ekranu
+          if (_isUserLoggedIn && _selectedIndex == 3) // Prikazuj logout button samo na "Profil" ekranu
             IconButton(
               icon: Icon(Icons.logout, color: Colors.white,),
               onPressed: () => signOut(context),
+            ),
+          if (!_isUserLoggedIn && _selectedIndex == 0) // Prikazuj logout kao povratak na login za neprijavljene
+            IconButton(
+              icon: Icon(Icons.logout, color: Colors.white,),
+              onPressed: () => signIn(context),
             ),
         ],
       ),
@@ -138,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
           items: _buildBottomNavigationItems(),
           currentIndex: _selectedIndex,
           onTap: (index) {
-            if (!_isUserLoggedIn && index == 1) return;
+            //if (!_isUserLoggedIn && index == 1) return;
             setState(() {
               _selectedIndex = index;
             });
@@ -187,6 +202,36 @@ class _MapScreenState extends State<MapScreen> {
       floatingActionButton: _selectedIndex == 0 ?
       Column(
         mainAxisAlignment: MainAxisAlignment.end,
+
+        children: [
+          // Prvi FloatingActionButton za prijavu onečišćenja
+          Visibility(
+            visible: _isUserLoggedIn, // Prikaži samo ako je korisnik prijavljen
+            child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => ReportPollutionScreen()),
+                  );
+                },
+                child: Icon(Icons.report),
+                tooltip: 'Prijavi onečišćenje',
+              ),
+          ),
+          SizedBox(height: 10), // Razmak između gumba
+          
+          // Drugi FloatingActionButton koji je uvijek vidljiv
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => QRScanScreen()),
+              );
+            },
+            child: Icon(Icons.qr_code_scanner),
+            tooltip: 'Skeniraj QR kod',
+          ),
+        ],
+
+        /*
         children: <Widget>[
           FloatingActionButton(
             onPressed: () {
@@ -208,6 +253,9 @@ class _MapScreenState extends State<MapScreen> {
             tooltip: 'Skeniraj QR kod',
           ),
         ],
+        OLD */
+
+
       ): null, // Sakrij gumb na drugim ekranima
     );
   }

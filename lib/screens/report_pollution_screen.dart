@@ -153,7 +153,10 @@ class _PollutionReportFormState extends State<ReportPollutionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Prijavi lokaciju'),
+        title: Text(
+          'Prijavi lokaciju',
+          style: TextStyle(color: Colors.white),
+          ),
         backgroundColor: Color(0xFF151E48),
       ),
       body: Padding(

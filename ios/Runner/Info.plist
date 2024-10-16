@@ -47,7 +47,10 @@
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Potrebna je lokacija za prijavu onečišćenja.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Ova aplikacija koristi vašu lokaciju za prijavu onečišćenja.</string>
+	<string>Potrebna je lokacija za prijavu onečišćenja.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Potrebna je lokacija za prijavu onečišćenja.</string>
+
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Ova aplikacija koristi vašu galeriju za prijenos slika u prijavi onečišćenja.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
@@ -69,5 +72,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>ASAuthorizationAppleID</key>
+	<dict>
+		<key>NSFaceIDUsageDescription</key>
+		<string>Potrebna je za prijavu putem Apple ID-a.</string>
+	</dict>
 </dict>
 </plist>
