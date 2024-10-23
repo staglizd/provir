@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Provir SEA.R.C.H',
+      title: 'Provir S E A R.C.H.',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         bottomNavigationBarTheme: BottomNavigationBarThemeData(

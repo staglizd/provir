@@ -14,7 +14,7 @@ class SplashScreen extends StatelessWidget {
       backgroundColor: Colors.blue,
       body: Center(
         child: Text(
-          'Provir SEA.R.C.H',
+          'Provir S E A R.C.H.',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
